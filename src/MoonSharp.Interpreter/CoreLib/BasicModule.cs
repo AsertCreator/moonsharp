@@ -238,42 +238,69 @@ namespace MoonSharp.Interpreter.CoreLib
 			}
 			else
 			{
-                //!COMPAT: tonumber supports only 2,8,10 or 16 as base
-                //UPDATE: added support for 3-9 base numbers
-                DynValue ee;
+				DynValue ee;
 
 				if (args[0].Type != DataType.Number)
 					ee = args.AsType(0, "tonumber", DataType.String, false);
 				else
-					ee = DynValue.NewString(args[0].Number.ToString(CultureInfo.InvariantCulture)); ;
+					ee = DynValue.NewString(args[0].Number.ToString(CultureInfo.InvariantCulture));
 
 				int bb = (int)b.Number;
 
-			    uint uiv = 0;
-                if (bb == 2 || bb == 8 || bb == 10 || bb == 16)
-			    {
-                    uiv = Convert.ToUInt32(ee.String.Trim(), bb);
-                }
-			    else if (bb < 10 && bb > 2) // Support for 3, 4, 5, 6, 7 and 9 based numbers
-			    {
-			        foreach (char digit in ee.String.Trim())
-			        {
-			            int value = digit - 48;
-			            if (value < 0 || value >= bb)
-			            {
-                            throw new ScriptRuntimeException("bad argument #1 to 'tonumber' (invalid character)");
-                        }
+				if (bb < 2 || bb > 36)
+					throw new ScriptRuntimeException("bad argument #2 to 'tonumber' (base out of range)");
 
-                        uiv = (uint)(uiv * bb) + (uint)value;
-			        }
-                }
-			    else
-			    {
-                    throw new ScriptRuntimeException("bad argument #2 to 'tonumber' (base out of range)");
-                }
-
-				return DynValue.NewNumber(uiv);
+				return StringToNumberInBase(ee.String, bb);
 			}
+		}
+
+		// Integer numeral parsing for tonumber(e, base), following standard Lua semantics:
+		// optional surrounding whitespace, optional '-' sign, then one or more digits
+		// (0-9, a-z/A-Z for 10-35) all below the base. Any other input yields nil — never
+		// a CLR exception, which would escape the interpreter as a non-Lua error.
+		private static DynValue StringToNumberInBase(string str, int numBase)
+		{
+			// A string DynValue can wrap a null (e.g. host-created DynValue.NewString(null));
+			// treat it as unparseable rather than dereferencing it into a NullReferenceException.
+			if (str == null)
+				return DynValue.Nil;
+
+			string s = str.Trim();
+			int i = 0;
+			bool neg = false;
+
+			if (i < s.Length && s[i] == '-')
+			{
+				neg = true;
+				i++;
+			}
+
+			if (i >= s.Length)
+				return DynValue.Nil;
+
+			double value = 0.0;
+
+			for (; i < s.Length; i++)
+			{
+				char c = s[i];
+				int digit;
+
+				if (c >= '0' && c <= '9')
+					digit = c - '0';
+				else if (c >= 'a' && c <= 'z')
+					digit = c - 'a' + 10;
+				else if (c >= 'A' && c <= 'Z')
+					digit = c - 'A' + 10;
+				else
+					return DynValue.Nil;
+
+				if (digit >= numBase)
+					return DynValue.Nil;
+
+				value = value * numBase + digit;
+			}
+
+			return DynValue.NewNumber(neg ? -value : value);
 		}
 
 		[MoonSharpModuleMethod]
