@@ -53,6 +53,17 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 			bc.Emit_Store(m_Ref, stackofs, tupleidx);
 		}
 
+		public void CompileCompoundAssignment(Execution.VM.ByteCode bc, Expression rvalue, Execution.VM.OpCode op)
+		{
+			// A symbol has no subexpressions, so there is nothing to evaluate once and keep alive:
+			// load it, apply the operator, store it back.
+			bc.Emit_Load(m_Ref);        // [ v ]
+			rvalue.Compile(bc);         // [ v, r ]
+			bc.Emit_Operator(op);       // [ x ]
+			bc.Emit_Store(m_Ref, 0, 0);
+			bc.Emit_Pop();
+		}
+
 		public override DynValue Eval(ScriptExecutionContext context)
 		{
 			return context.EvaluateSymbolByName(m_VarName);

@@ -68,6 +68,15 @@ namespace MoonSharp.Interpreter.Tree
 
 		Brk_Open_Curly_Shared,
 		Op_Dollar,
+
+		// Compound assignment operators - https://rfcs.luau.org/syntax-compound-assignment.html
+		Op_AddAssign,
+		Op_SubAssign,
+		Op_MulAssign,
+		Op_DivAssign,
+		Op_ModAssign,
+		Op_PwrAssign,
+		Op_ConcatAssign,
 	}
 
 

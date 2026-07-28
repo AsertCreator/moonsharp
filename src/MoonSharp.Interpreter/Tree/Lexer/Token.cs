@@ -146,6 +146,28 @@ namespace MoonSharp.Interpreter.Tree
 			}
 		}
 
+		/// <summary>
+		/// Whether this token is one of the compound assignment operators (+=, -=, *=, /=, %=, ^=, ..=).
+		/// Note these are deliberately NOT binary operators: they are only ever valid as the head of an
+		/// assignment statement, which is what keeps 'a = (b += 1)' a syntax error.
+		/// </summary>
+		public bool IsCompoundAssignmentOperator()
+		{
+			switch (Type)
+			{
+				case TokenType.Op_AddAssign:
+				case TokenType.Op_SubAssign:
+				case TokenType.Op_MulAssign:
+				case TokenType.Op_DivAssign:
+				case TokenType.Op_ModAssign:
+				case TokenType.Op_PwrAssign:
+				case TokenType.Op_ConcatAssign:
+					return true;
+				default:
+					return false;
+			}
+		}
+
 
 		internal Debugging.SourceRef GetSourceRef(bool isStepStop = true)
 		{

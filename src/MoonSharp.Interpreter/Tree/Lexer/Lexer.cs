@@ -175,14 +175,14 @@ namespace MoonSharp.Interpreter.Tree
 					{
 						char next = CursorCharNext();
 						if (next == '.')
-							return PotentiallyDoubleCharOperator('.', TokenType.Op_Concat, TokenType.VarArgs, fromLine, fromCol);
+							return ReadDotDotToken(fromLine, fromCol);
 						else if (LexerUtils.CharIsDigit(next))
 							return ReadNumberToken(fromLine, fromCol, true);
 						else
 							return CreateToken(TokenType.Dot, fromLine, fromCol, ".");
 					}
 				case '+':
-					return CreateSingleCharToken(TokenType.Op_Add, fromLine, fromCol);
+					return PotentiallyDoubleCharOperator('=', TokenType.Op_Add, TokenType.Op_AddAssign, fromLine, fromCol);
 				case '-':
 					{
 						char next = CursorCharNext();
@@ -190,19 +190,24 @@ namespace MoonSharp.Interpreter.Tree
 						{
 							return ReadComment(fromLine, fromCol);
 						}
+						else if (next == '=')
+						{
+							CursorCharNext();
+							return CreateToken(TokenType.Op_SubAssign, fromLine, fromCol, "-=");
+						}
 						else
 						{
 							return CreateToken(TokenType.Op_MinusOrSub, fromLine, fromCol, "-");
 						}
 					}
 				case '*':
-					return CreateSingleCharToken(TokenType.Op_Mul, fromLine, fromCol);
+					return PotentiallyDoubleCharOperator('=', TokenType.Op_Mul, TokenType.Op_MulAssign, fromLine, fromCol);
 				case '/':
-					return CreateSingleCharToken(TokenType.Op_Div, fromLine, fromCol);
+					return PotentiallyDoubleCharOperator('=', TokenType.Op_Div, TokenType.Op_DivAssign, fromLine, fromCol);
 				case '%':
-					return CreateSingleCharToken(TokenType.Op_Mod, fromLine, fromCol);
+					return PotentiallyDoubleCharOperator('=', TokenType.Op_Mod, TokenType.Op_ModAssign, fromLine, fromCol);
 				case '^':
-					return CreateSingleCharToken(TokenType.Op_Pwr, fromLine, fromCol);
+					return PotentiallyDoubleCharOperator('=', TokenType.Op_Pwr, TokenType.Op_PwrAssign, fromLine, fromCol);
 				case '$':
 					return PotentiallyDoubleCharOperator('{', TokenType.Op_Dollar, TokenType.Brk_Open_Curly_Shared, fromLine, fromCol);
 				case '#':
@@ -539,6 +544,31 @@ namespace MoonSharp.Interpreter.Tree
 			}
 			else
 				return CreateToken(singleCharToken, fromLine, fromCol, op);
+		}
+
+
+		/// <summary>
+		/// Disambiguates the tokens starting with '..' : '..', '...' and '..='.
+		/// Called with the cursor on the second dot.
+		/// </summary>
+		private Token ReadDotDotToken(int fromLine, int fromCol)
+		{
+			char next = CursorCharNext();
+
+			if (next == '.')
+			{
+				CursorCharNext();
+				return CreateToken(TokenType.VarArgs, fromLine, fromCol, "...");
+			}
+			else if (next == '=')
+			{
+				CursorCharNext();
+				return CreateToken(TokenType.Op_ConcatAssign, fromLine, fromCol, "..=");
+			}
+			else
+			{
+				return CreateToken(TokenType.Op_Concat, fromLine, fromCol, "..");
+			}
 		}
 
 

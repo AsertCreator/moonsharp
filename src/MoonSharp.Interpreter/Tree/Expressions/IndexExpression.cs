@@ -65,6 +65,66 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 			}
 		}
 
+		public void CompileCompoundAssignment(ByteCode bc, Expression rvalue, OpCode op)
+		{
+			// The base and the key must be evaluated exactly once - 't[f()] += 1' calls f once - so
+			// they are computed, kept on the stack, and duplicated for the read. See
+			// https://rfcs.luau.org/syntax-compound-assignment.html
+			DynValue embeddedIndex = null;
+			bool isNameIndex = false;
+			bool isExpList = false;
+
+			if (m_Name != null)
+			{
+				embeddedIndex = DynValue.NewString(m_Name);
+				isNameIndex = true;
+			}
+			else if (m_IndexExp is LiteralExpression)
+			{
+				embeddedIndex = ((LiteralExpression)m_IndexExp).Value;
+			}
+			else
+			{
+				isExpList = m_IndexExp is ExprListExpression;
+			}
+
+			// A key that is embedded in the instruction itself costs no stack slot.
+			bool keyOnStack = (embeddedIndex == null);
+
+			m_BaseExp.Compile(bc);                                  // [ base ]
+
+			if (keyOnStack)
+			{
+				m_IndexExp.Compile(bc);                             // [ base, key ]
+				bc.Emit_Copy(1);                                    // [ base, key, base ]
+				bc.Emit_Copy(1);                                    // [ base, key, base, key ]
+			}
+			else
+			{
+				bc.Emit_Copy(0);                                    // [ base, base ]
+			}
+
+			bc.Emit_Index(embeddedIndex, isNameIndex, isExpList);   // [ base, (key,) value ]
+
+			rvalue.Compile(bc);                                     // [ base, (key,) value, rvalue ]
+			bc.Emit_Operator(op);                                   // [ base, (key,) result ]
+
+			// Rotate the base (and key) back to the top so Emit_IndexSet can pop them, leaving the
+			// result immediately below - i.e. at stack offset 0, where the store reads its value from.
+			if (keyOnStack)
+			{
+				bc.Emit_Swap(0, 2);                                 // [ result, key, base ]
+				bc.Emit_Swap(0, 1);                                 // [ result, base, key ]
+			}
+			else
+			{
+				bc.Emit_Swap(0, 1);                                 // [ result, base ]
+			}
+
+			bc.Emit_IndexSet(0, 0, embeddedIndex, isNameIndex, isExpList);
+			bc.Emit_Pop();
+		}
+
 		public override DynValue Eval(ScriptExecutionContext context)
 		{
 			DynValue b = m_BaseExp.Eval(context).ToScalar();
