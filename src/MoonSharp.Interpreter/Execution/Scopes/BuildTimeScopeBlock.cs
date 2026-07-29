@@ -69,7 +69,10 @@ namespace MoonSharp.Interpreter.Execution.Scopes
 			this.ScopeBlock.ToInclusive = this.ScopeBlock.To = lastVal;
 
 			if (firstVal < 0)
+			{
 				this.ScopeBlock.From = buildTimeScopeFrame.GetPosForNextVar();
+				this.ScopeBlock.ToInclusive = this.ScopeBlock.To = this.ScopeBlock.From - 1;
+			}
 
 			foreach (var child in ChildNodes)
 			{

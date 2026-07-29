@@ -216,5 +216,66 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 			Assert.AreEqual(DataType.Number, res.Type);
 			Assert.AreEqual(67, res.Number);
 		}
+
+		[Test]
+		public void Goto_OutOfLoopToLabelInIfBlock_PreservesEnclosingLocals()
+		{
+			// https://github.com/moonsharp-devs/moonsharp/issues/309
+			string script = @"
+				local a = 7
+
+				if true then
+					for x = 1, 10 do
+						goto label1
+					end
+					::label1::
+				end
+
+				return a;
+				";
+
+			DynValue res = Script.RunString(script);
+
+			Assert.AreEqual(DataType.Number, res.Type);
+			Assert.AreEqual(7, res.Number);
+		}
+
+		[Test]
+		public void Label_AfterNumericForInIfBlock_PreservesGlobalsTable()
+		{
+			// No goto is needed to trigger this: the label alone is enough. 'tostring' is a
+			// global, so this fails if the chunk's _ENV local slot has been cleared.
+			string script = @"
+				if true then
+					for x = 1, 10 do end
+					::label1::
+				end
+
+				return tostring(42);
+				";
+
+			DynValue res = Script.RunString(script);
+
+			Assert.AreEqual(DataType.String, res.Type);
+			Assert.AreEqual("42", res.String);
+		}
+
+		[Test]
+		public void Label_AfterGenericForInIfBlock_PreservesGlobalsTable()
+		{
+			string script = @"
+				if true then
+					for k, v in pairs({ 1, 2 }) do end
+					::label1::
+				end
+
+				return tostring(42);
+				";
+
+			DynValue res = Script.RunString(script);
+
+			Assert.AreEqual(DataType.String, res.Type);
+			Assert.AreEqual("42", res.String);
+		}
 	}
 }
