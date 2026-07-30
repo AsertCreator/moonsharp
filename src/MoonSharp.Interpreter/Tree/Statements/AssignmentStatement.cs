@@ -98,12 +98,33 @@ namespace MoonSharp.Interpreter.Tree.Statements
 					exp.Compile(bc);
 				}
 
+				// An IndexSet going through a __newindex metamethod has to make room for the
+				// value the metamethod call leaves on the stack, and it does that by popping
+				// the top of it. Give it a scratch slot to eat, so it can't consume an r-value
+				// a later assignment still needs. The call's return value lands back in that
+				// same slot, so one scratch is enough however many targets are indexed.
+				bool needsScratch = false;
+
+				foreach (var lvalue in m_LValues)
+				{
+					if (lvalue is IndexExpression)
+					{
+						needsScratch = true;
+						break;
+					}
+				}
+
+				if (needsScratch)
+					bc.Emit_Literal(DynValue.Nil);
+
+				int scratchOfs = needsScratch ? 1 : 0;
+
 				for (int i = 0; i < m_LValues.Count; i++)
 					m_LValues[i].CompileAssignment(bc,
-							Math.Max(m_RValues.Count - 1 - i, 0), // index of r-value
+							Math.Max(m_RValues.Count - 1 - i, 0) + scratchOfs, // index of r-value
 							i - Math.Min(i, m_RValues.Count - 1)); // index in last tuple
 
-				bc.Emit_Pop(m_RValues.Count);
+				bc.Emit_Pop(m_RValues.Count + scratchOfs);
 			}
 		}
 
