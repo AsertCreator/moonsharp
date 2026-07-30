@@ -50,6 +50,13 @@ namespace MoonSharp.Interpreter.Tree
 					return new ReturnStatement(lcontext);
 				case TokenType.Break:
 					return new BreakStatement(lcontext);
+				case TokenType.Name:
+					if (IsContinueStatement(lcontext, tkn))
+					{
+						forceLast = true;
+						return new ContinueStatement(lcontext);
+					}
+					goto default;
 				default:
 					{
 						Token l = lcontext.Lexer.Current;
@@ -61,6 +68,39 @@ namespace MoonSharp.Interpreter.Tree
 						else
 							return new AssignmentStatement(lcontext, exp, l);
 					}
+			}
+		}
+
+		/// <summary>
+		/// 'continue' is a context sensitive keyword, not a reserved one, so 'continue' remains a
+		/// perfectly good variable name. It is only a statement when the token after it cannot
+		/// continue an expression - see https://rfcs.luau.org/syntax-continue-statement.html
+		/// </summary>
+		private static bool IsContinueStatement(ScriptLoadingContext lcontext, Token tkn)
+		{
+			if (tkn.Text != "continue")
+				return false;
+
+			Token next = lcontext.Lexer.PeekNext();
+
+			if (next.IsCompoundAssignmentOperator())
+				return false;
+
+			switch (next.Type)
+			{
+				case TokenType.Dot:
+				case TokenType.Brk_Open_Square:
+				case TokenType.Colon:
+				case TokenType.Brk_Open_Curly:
+				case TokenType.Brk_Open_Curly_Shared:
+				case TokenType.Brk_Open_Round:
+				case TokenType.Op_Assignment:
+				case TokenType.String:
+				case TokenType.String_Long:
+				case TokenType.Comma:
+					return false;
+				default:
+					return true;
 			}
 		}
 

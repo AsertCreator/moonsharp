@@ -26,7 +26,9 @@ namespace MoonSharp.Interpreter.Tree.Statements
 
 			lcontext.Scope.PushBlock();
 			CheckTokenType(lcontext, TokenType.Do);
+			lcontext.PushParseTimeLoop(new ParseTimeLoop());
 			m_Block = new CompositeStatement(lcontext);
+			lcontext.PopParseTimeLoop();
 			m_End = CheckTokenType(lcontext, TokenType.End).GetSourceRef();
 			m_StackFrame = lcontext.Scope.PopBlock();
 
@@ -56,10 +58,15 @@ namespace MoonSharp.Interpreter.Tree.Statements
 
 			m_Block.Compile(bc);
 
+			int continuepoint = bc.GetJumpPointForNextInstruction();
+
+			foreach (Instruction i in L.ContinueJumps)
+				i.NumVal = continuepoint;
+
 			bc.PopSourceRef();
 			bc.Emit_Debug("..end");
 			bc.PushSourceRef(m_End);
-	
+
 			bc.Emit_Leave(m_StackFrame);
 			bc.Emit_Jump(OpCode.Jump, start);
 			

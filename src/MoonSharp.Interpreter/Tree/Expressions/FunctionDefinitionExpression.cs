@@ -60,10 +60,15 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 
 			m_ParamNames = DefineArguments(paramnames, lcontext);
 
+			// a function body is a loop boundary: a 'continue' in here belongs to no enclosing loop
+			lcontext.PushParseTimeLoop(new ParseTimeLoop());
+
 			if(isLambda)
 				m_Statement = CreateLambdaBody(lcontext);
 			else
 				m_Statement = CreateBody(lcontext);
+
+			lcontext.PopParseTimeLoop();
 
 			m_StackFrame = lcontext.Scope.PopFunction();
 

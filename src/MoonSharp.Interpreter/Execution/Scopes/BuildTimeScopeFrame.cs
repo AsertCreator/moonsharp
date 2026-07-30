@@ -21,6 +21,11 @@ namespace MoonSharp.Interpreter.Execution.Scopes
 			m_ScopeTreeHead = m_ScopeTreeHead.AddChild();
 		}
 
+		internal BuildTimeScopeBlock CurrentBlock
+		{
+			get { return m_ScopeTreeHead; }
+		}
+
 		internal RuntimeScopeBlock PopBlock()
 		{
 			var tree = m_ScopeTreeHead;

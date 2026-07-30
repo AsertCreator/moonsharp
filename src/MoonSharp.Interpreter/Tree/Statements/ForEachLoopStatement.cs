@@ -49,7 +49,9 @@ namespace MoonSharp.Interpreter.Tree.Statements
 
 			m_RefFor = forToken.GetSourceRef(CheckTokenType(lcontext, TokenType.Do));
 
+			lcontext.PushParseTimeLoop(new ParseTimeLoop());
 			m_Block = new CompositeStatement(lcontext);
+			lcontext.PopParseTimeLoop();
 
 			m_RefEnd = CheckTokenType(lcontext, TokenType.End).GetSourceRef();
 
@@ -106,6 +108,11 @@ namespace MoonSharp.Interpreter.Tree.Statements
 
 			// executes the stuff - stack : iterator-tuple
 			m_Block.Compile(bc);
+
+			int continuepoint = bc.GetJumpPointForNextInstruction();
+
+			foreach (Instruction i in L.ContinueJumps)
+				i.NumVal = continuepoint;
 
 			bc.PopSourceRef();
 			bc.PushSourceRef(m_RefEnd);

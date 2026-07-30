@@ -18,11 +18,48 @@ namespace MoonSharp.Interpreter.Tree.Statements
 			m_Repeat = CheckTokenType(lcontext, TokenType.Repeat).GetSourceRef();
 
 			lcontext.Scope.PushBlock();
+
+			// The RFC forbids 'continue' here when the until condition reads a local declared after
+			// it, since on a continued iteration that local was never assigned. Track how many
+			// locals this block had declared at the earliest continue, then see whether the
+			// condition reaches past that point.
+			Execution.Scopes.BuildTimeScopeBlock repeatBlock = lcontext.Scope.CurrentBlock;
+			int continueDefinedVars = int.MaxValue;
+			Token continueToken = null;
+
+			ParseTimeLoop parseTimeLoop = new ParseTimeLoop();
+			parseTimeLoop.OnContinue = tkn =>
+			{
+				if (repeatBlock.DefinedCount < continueDefinedVars)
+				{
+					continueDefinedVars = repeatBlock.DefinedCount;
+					continueToken = tkn;
+				}
+			};
+
+			lcontext.PushParseTimeLoop(parseTimeLoop);
 			m_Block = new CompositeStatement(lcontext);
+			lcontext.PopParseTimeLoop();
 
 			Token until = CheckTokenType(lcontext, TokenType.Until);
 
+			if (continueToken != null)
+				lcontext.Scope.BeginSymbolRecording();
+
 			m_Condition = Expression.Expr(lcontext);
+
+			if (continueToken != null)
+			{
+				foreach (SymbolRef symbol in lcontext.Scope.EndSymbolRecording())
+				{
+					if (repeatBlock.GetDefinitionOrdinal(symbol) >= continueDefinedVars)
+					{
+						throw new SyntaxErrorException(continueToken,
+							"<continue> at line {0} would skip the declaration of local '{1}' used by the until condition",
+							continueToken.FromLine, symbol.Name);
+					}
+				}
+			}
 
 			m_Until = until.GetSourceRefUpTo(lcontext.Lexer.Current);
 
@@ -46,6 +83,11 @@ namespace MoonSharp.Interpreter.Tree.Statements
 
 			bc.Emit_Enter(m_StackFrame);
 			m_Block.Compile(bc);
+
+			int continuepoint = bc.GetJumpPointForNextInstruction();
+
+			foreach (Instruction i in L.ContinueJumps)
+				i.NumVal = continuepoint;
 
 			bc.PopSourceRef();
 			bc.PushSourceRef(m_Until);

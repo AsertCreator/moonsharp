@@ -12,6 +12,7 @@ namespace MoonSharp.Interpreter.Execution.Scopes
 		internal RuntimeScopeBlock ScopeBlock { get; private set; }
 
 		Dictionary<string, SymbolRef> m_DefinedNames = new Dictionary<string, SymbolRef>();
+		List<SymbolRef> m_DefinitionOrder = new List<SymbolRef>();
 
 
 
@@ -46,8 +47,26 @@ namespace MoonSharp.Interpreter.Execution.Scopes
 		{
 			SymbolRef l = SymbolRef.Local(name, -1);
 			m_DefinedNames.Add(name, l);
+			m_DefinitionOrder.Add(l);
 			m_LastDefinedName = name;
 			return l;
+		}
+
+		/// <summary>
+		/// How many locals this block has declared so far. Used to tell whether a local was
+		/// declared before or after a given point in the block.
+		/// </summary>
+		internal int DefinedCount
+		{
+			get { return m_DefinitionOrder.Count; }
+		}
+
+		/// <summary>
+		/// Position of a local in this block's declaration order, or -1 if it isn't ours.
+		/// </summary>
+		internal int GetDefinitionOrdinal(SymbolRef symbol)
+		{
+			return m_DefinitionOrder.IndexOf(symbol);
 		}
 
 		internal int ResolveLRefs(BuildTimeScopeFrame buildTimeScopeFrame)
