@@ -51,8 +51,10 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		public void Tonumber_WithBase_HandlesSignAndWhitespace()
 		{
 			Assert.AreEqual(-255.0, Num("return tonumber('-ff', 16)"));
+			Assert.AreEqual(16.0, Num("return tonumber('+10', 16)"));
 			Assert.AreEqual(16.0, Num("return tonumber('  10  ', 16)"));
 			Assert.AreEqual(-5.0, Num("return tonumber(' -101 ', 2)"));
+			Assert.AreEqual(5.0, Num("return tonumber(' +101 ', 2)"));
 		}
 
 		[Test]
@@ -73,7 +75,7 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 			Assert.IsTrue(IsNil("return tonumber('', 16)"));
 			Assert.IsTrue(IsNil("return tonumber('   ', 16)"));
 			Assert.IsTrue(IsNil("return tonumber('-', 16)"));
-			Assert.IsTrue(IsNil("return tonumber('+10', 16)")); // only '-' is a valid sign in Lua
+			Assert.IsTrue(IsNil("return tonumber('+', 16)")); // a bare sign is not a numeral
 		}
 
 		[Test]

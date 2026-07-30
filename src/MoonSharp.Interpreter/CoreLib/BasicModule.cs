@@ -255,7 +255,7 @@ namespace MoonSharp.Interpreter.CoreLib
 		}
 
 		// Integer numeral parsing for tonumber(e, base), following standard Lua semantics:
-		// optional surrounding whitespace, optional '-' sign, then one or more digits
+		// optional surrounding whitespace, an optional '-' or '+' sign, then one or more digits
 		// (0-9, a-z/A-Z for 10-35) all below the base. Any other input yields nil — never
 		// a CLR exception, which would escape the interpreter as a non-Lua error.
 		private static DynValue StringToNumberInBase(string str, int numBase)
@@ -269,9 +269,9 @@ namespace MoonSharp.Interpreter.CoreLib
 			int i = 0;
 			bool neg = false;
 
-			if (i < s.Length && s[i] == '-')
+			if (i < s.Length && (s[i] == '-' || s[i] == '+'))
 			{
-				neg = true;
+				neg = s[i] == '-';
 				i++;
 			}
 
