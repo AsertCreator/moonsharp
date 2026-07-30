@@ -13,8 +13,9 @@ namespace MoonSharp.Interpreter.Tree
 		int m_Col = 0;
 		int m_SourceId;
 		bool m_AutoSkipComments = false;
+		LuauFeatures m_LuauFeatures = LuauFeatures.None;
 
-		public Lexer(int sourceID, string scriptContent, bool autoSkipComments)
+		public Lexer(int sourceID, string scriptContent, bool autoSkipComments, LuauFeatures luauFeatures = LuauFeatures.None)
 		{
 			m_Code = scriptContent;
 			m_SourceId = sourceID;
@@ -24,6 +25,12 @@ namespace MoonSharp.Interpreter.Tree
 				m_Code = m_Code.Substring(1);
 
 			m_AutoSkipComments = autoSkipComments;
+			m_LuauFeatures = luauFeatures;
+		}
+
+		private bool CompoundAssignmentEnabled
+		{
+			get { return (m_LuauFeatures & LuauFeatures.CompoundAssignment) != 0; }
 		}
 
 		public Token Current
@@ -182,7 +189,7 @@ namespace MoonSharp.Interpreter.Tree
 							return CreateToken(TokenType.Dot, fromLine, fromCol, ".");
 					}
 				case '+':
-					return PotentiallyDoubleCharOperator('=', TokenType.Op_Add, TokenType.Op_AddAssign, fromLine, fromCol);
+					return PotentiallyCompoundAssignOperator(TokenType.Op_Add, TokenType.Op_AddAssign, fromLine, fromCol);
 				case '-':
 					{
 						char next = CursorCharNext();
@@ -190,7 +197,7 @@ namespace MoonSharp.Interpreter.Tree
 						{
 							return ReadComment(fromLine, fromCol);
 						}
-						else if (next == '=')
+						else if (next == '=' && CompoundAssignmentEnabled)
 						{
 							CursorCharNext();
 							return CreateToken(TokenType.Op_SubAssign, fromLine, fromCol, "-=");
@@ -201,13 +208,13 @@ namespace MoonSharp.Interpreter.Tree
 						}
 					}
 				case '*':
-					return PotentiallyDoubleCharOperator('=', TokenType.Op_Mul, TokenType.Op_MulAssign, fromLine, fromCol);
+					return PotentiallyCompoundAssignOperator(TokenType.Op_Mul, TokenType.Op_MulAssign, fromLine, fromCol);
 				case '/':
-					return PotentiallyDoubleCharOperator('=', TokenType.Op_Div, TokenType.Op_DivAssign, fromLine, fromCol);
+					return PotentiallyCompoundAssignOperator(TokenType.Op_Div, TokenType.Op_DivAssign, fromLine, fromCol);
 				case '%':
-					return PotentiallyDoubleCharOperator('=', TokenType.Op_Mod, TokenType.Op_ModAssign, fromLine, fromCol);
+					return PotentiallyCompoundAssignOperator(TokenType.Op_Mod, TokenType.Op_ModAssign, fromLine, fromCol);
 				case '^':
-					return PotentiallyDoubleCharOperator('=', TokenType.Op_Pwr, TokenType.Op_PwrAssign, fromLine, fromCol);
+					return PotentiallyCompoundAssignOperator(TokenType.Op_Pwr, TokenType.Op_PwrAssign, fromLine, fromCol);
 				case '$':
 					return PotentiallyDoubleCharOperator('{', TokenType.Op_Dollar, TokenType.Brk_Open_Curly_Shared, fromLine, fromCol);
 				case '#':
@@ -548,6 +555,19 @@ namespace MoonSharp.Interpreter.Tree
 
 
 		/// <summary>
+		/// Reads a single char operator which, if LuauFeatures.CompoundAssignment is enabled, may
+		/// instead be the two char compound assignment form ('*' vs '*=').
+		/// </summary>
+		private Token PotentiallyCompoundAssignOperator(TokenType singleCharToken, TokenType compoundAssignToken, int fromLine, int fromCol)
+		{
+			if (!CompoundAssignmentEnabled)
+				return CreateSingleCharToken(singleCharToken, fromLine, fromCol);
+
+			return PotentiallyDoubleCharOperator('=', singleCharToken, compoundAssignToken, fromLine, fromCol);
+		}
+
+
+		/// <summary>
 		/// Disambiguates the tokens starting with '..' : '..', '...' and '..='.
 		/// Called with the cursor on the second dot.
 		/// </summary>
@@ -560,7 +580,7 @@ namespace MoonSharp.Interpreter.Tree
 				CursorCharNext();
 				return CreateToken(TokenType.VarArgs, fromLine, fromCol, "...");
 			}
-			else if (next == '=')
+			else if (next == '=' && CompoundAssignmentEnabled)
 			{
 				CursorCharNext();
 				return CreateToken(TokenType.Op_ConcatAssign, fromLine, fromCol, "..=");

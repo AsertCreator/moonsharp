@@ -81,6 +81,9 @@ namespace MoonSharp.Interpreter.Tree
 			if (tkn.Text != "continue")
 				return false;
 
+			if ((lcontext.Script.Options.LuauFeatures & LuauFeatures.ContinueStatement) == 0)
+				return false;
+
 			Token next = lcontext.Lexer.PeekNext();
 
 			if (next.IsCompoundAssignmentOperator())

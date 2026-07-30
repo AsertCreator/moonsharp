@@ -27,6 +27,9 @@ namespace MoonSharp.Interpreter
 			this.ScriptLoader = defaults.ScriptLoader;
 
 			this.CheckThreadAccess = defaults.CheckThreadAccess;
+
+			this.ColonOperatorClrCallbackBehaviour = defaults.ColonOperatorClrCallbackBehaviour;
+			this.LuauFeatures = defaults.LuauFeatures;
 		}
 
 		/// <summary>
@@ -95,6 +98,13 @@ namespace MoonSharp.Interpreter
 		/// you are not calling MoonSharp execution concurrently as it is not supported.
 		/// </summary>
 		public bool CheckThreadAccess { get; set; }
+
+		/// <summary>
+		/// Gets or sets the set of Luau syntax extensions accepted by the parser. Defaults to
+		/// <see cref="MoonSharp.Interpreter.LuauFeatures.None"/>, i.e. plain Lua 5.2 syntax.
+		/// This is read when a script is loaded, so changing it does not affect code already loaded.
+		/// </summary>
+		public LuauFeatures LuauFeatures { get; set; }
 
 	}
 }

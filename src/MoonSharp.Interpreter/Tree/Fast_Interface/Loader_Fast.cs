@@ -37,7 +37,7 @@ namespace MoonSharp.Interpreter.Tree.Fast_Interface
 			{
 				Scope = new BuildTimeScope(),
 				Source = source,
-				Lexer = new Lexer(source.SourceID, source.Code, true)
+				Lexer = new Lexer(source.SourceID, source.Code, true, script.Options.LuauFeatures)
 			};
 		}
 

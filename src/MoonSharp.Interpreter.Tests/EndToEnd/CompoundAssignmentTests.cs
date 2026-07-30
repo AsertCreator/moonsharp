@@ -10,9 +10,16 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 	[TestFixture]
 	public class CompoundAssignmentTests
 	{
+		private static Script NewScript()
+		{
+			Script s = new Script();
+			s.Options.LuauFeatures = LuauFeatures.CompoundAssignment;
+			return s;
+		}
+
 		private static DynValue Run(string script)
 		{
-			return Script.RunString(script);
+			return NewScript().DoString(script);
 		}
 
 		private static void AssertNumber(double expected, string script)
@@ -361,7 +368,7 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 				s ..= 'b'
 				return t[1] .. s;";
 
-			Script s1 = new Script();
+			Script s1 = NewScript();
 			DynValue v1 = s1.LoadString(script);
 
 			using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
@@ -369,6 +376,7 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 				s1.Dump(v1, ms);
 				ms.Seek(0, System.IO.SeekOrigin.Begin);
 
+				// The dump is already compiled, so the reader needs no Luau features enabled.
 				Script s2 = new Script();
 				DynValue res = s2.LoadStream(ms).Function.Call();
 

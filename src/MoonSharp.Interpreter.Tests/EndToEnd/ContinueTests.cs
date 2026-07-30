@@ -9,9 +9,16 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 	[TestFixture]
 	public class ContinueTests
 	{
+		private static Script NewScript()
+		{
+			Script s = new Script();
+			s.Options.LuauFeatures = LuauFeatures.ContinueStatement;
+			return s;
+		}
+
 		private static void AssertNumber(double expected, string script)
 		{
-			DynValue res = Script.RunString(script);
+			DynValue res = NewScript().DoString(script);
 			Assert.AreEqual(DataType.Number, res.Type);
 			Assert.AreEqual(expected, res.Number);
 		}
@@ -214,14 +221,14 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		[ExpectedException(typeof(SyntaxErrorException))]
 		public void Continue_OutsideALoop_IsSyntaxError()
 		{
-			Script.RunString("continue");
+			NewScript().DoString("continue");
 		}
 
 		[Test]
 		[ExpectedException(typeof(SyntaxErrorException))]
 		public void Continue_InsideFunctionInsideLoop_IsSyntaxError()
 		{
-			Script.RunString("for i = 1, 3 do local f = function() continue end end");
+			NewScript().DoString("for i = 1, 3 do local f = function() continue end end");
 		}
 
 		[Test]
@@ -229,7 +236,7 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		public void Continue_FollowedByAnotherStatement_IsSyntaxError()
 		{
 			// continue terminates its block, like break and return
-			Script.RunString("for i = 1, 3 do continue local x = 1 end");
+			NewScript().DoString("for i = 1, 3 do continue local x = 1 end");
 		}
 
 		// ---------------------------------------------------------------
@@ -241,7 +248,7 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		[ExpectedException(typeof(SyntaxErrorException))]
 		public void Continue_InRepeat_WhenUntilReadsLaterLocal_IsSyntaxError()
 		{
-			Script.RunString(@"
+			NewScript().DoString(@"
 				local i = 0
 				repeat
 					i = i + 1
