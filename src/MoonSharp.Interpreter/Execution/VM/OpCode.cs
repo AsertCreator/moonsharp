@@ -64,6 +64,7 @@ namespace MoonSharp.Interpreter.Execution.VM
 		Incr,		// Performs an add operation, without extracting the operands from the v-stack and assuming the operands are numbers.
 		ToNum,		// Converts the top of the stack to a number
 		ToBool,		// Converts the top of the stack to a boolean
+		ToStr,		// Converts the top of the stack to a string the way tostring does, honouring __tostring
 		ExpTuple,	// Expands a tuple on the stack
 
 

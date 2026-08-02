@@ -77,6 +77,16 @@ namespace MoonSharp.Interpreter.Tree
 		Op_ModAssign,
 		Op_PwrAssign,
 		Op_ConcatAssign,
+
+		// Interpolated strings - https://rfcs.luau.org/syntax-string-interpolation.html
+		// A string with holes lexes as InterpBegin (expr InterpMid)* expr InterpEnd, each token
+		// carrying the literal text next to it. One with no holes lexes as a plain String.
+		// One with no holes lexes as String_Interp rather than String, so that the RFC's ban on
+		// using an interpolated string as a bare call argument holds either way.
+		String_Interp,
+		String_InterpBegin,
+		String_InterpMid,
+		String_InterpEnd,
 	}
 
 

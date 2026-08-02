@@ -176,6 +176,10 @@ namespace MoonSharp.Interpreter.Execution.VM
 						case OpCode.ToNum:
 							ExecToNum(i);
 							break;
+						case OpCode.ToStr:
+							instructionPtr = ExecToStr(i, instructionPtr);
+							if (instructionPtr == YIELD_SPECIAL_TRAP) goto yield_to_calling_coroutine;
+							break;
 						case OpCode.JFor:
 							instructionPtr = ExecJFor(i, instructionPtr);
 							if (instructionPtr == YIELD_SPECIAL_TRAP) goto yield_to_calling_coroutine;
@@ -447,6 +451,22 @@ namespace MoonSharp.Interpreter.Execution.VM
 				m_ValueStack.Push(DynValue.NewNumber(v.Value));
 			else
 				throw ScriptRuntimeException.ConvertToNumberFailed(i.NumVal);
+		}
+
+
+		/// <summary>
+		/// Converts the top of the stack the way tostring does, so an interpolated string renders
+		/// booleans, nil and tables the same way print would, and honours __tostring.
+		/// </summary>
+		private int ExecToStr(Instruction i, int instructionPtr)
+		{
+			DynValue v = m_ValueStack.Pop().ToScalar();
+
+			int ip = Internal_InvokeUnaryMetaMethod(v, "__tostring", instructionPtr);
+			if (ip >= 0) return ip;
+
+			m_ValueStack.Push(DynValue.NewString(v.ToPrintString()));
+			return instructionPtr;
 		}
 
 

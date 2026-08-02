@@ -196,6 +196,11 @@ namespace MoonSharp.Interpreter.Execution.VM
 			return AppendInstruction(new Instruction(m_CurrentSourceRef) { OpCode = OpCode.ToNum, NumVal = stage });
 		}
 
+		public Instruction Emit_ToStr()
+		{
+			return AppendInstruction(new Instruction(m_CurrentSourceRef) { OpCode = OpCode.ToStr });
+		}
+
 		public Instruction Emit_Incr(int i)
 		{
 			return AppendInstruction(new Instruction(m_CurrentSourceRef) { OpCode = OpCode.Incr, NumVal = i });

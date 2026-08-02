@@ -31,6 +31,7 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 					break;
 				case TokenType.String:
 				case TokenType.String_Long:
+				case TokenType.String_Interp:
 					m_Value = DynValue.NewString(t.Text).AsReadOnly();
 					break;
 				case TokenType.True:

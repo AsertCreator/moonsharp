@@ -136,10 +136,13 @@ namespace MoonSharp.Interpreter.Tree
 				case TokenType.Number_HexFloat:
 				case TokenType.String:
 				case TokenType.String_Long:
+				case TokenType.String_Interp:
 				case TokenType.Nil:
 				case TokenType.True:
 				case TokenType.False:
 					return new LiteralExpression(lcontext, t);
+				case TokenType.String_InterpBegin:
+					return new StringInterpolationExpression(lcontext);
 				case TokenType.VarArgs:
 					return new SymbolRefExpression(t, lcontext);
 				case TokenType.Brk_Open_Curly:

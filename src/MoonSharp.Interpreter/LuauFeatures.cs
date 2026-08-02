@@ -28,9 +28,15 @@ namespace MoonSharp.Interpreter
 		ContinueStatement = 0x2,
 
 		/// <summary>
+		/// Interpolated strings, delimited by backticks, with expressions in braces:
+		/// `hello {name}`. See https://rfcs.luau.org/syntax-string-interpolation.html
+		/// </summary>
+		StringInterpolation = 0x4,
+
+		/// <summary>
 		/// All the Luau extensions supported by this version of MoonSharp. Note that this is not
 		/// version stable - scripts relying on a specific set of extensions should name them.
 		/// </summary>
-		All = CompoundAssignment | ContinueStatement,
+		All = CompoundAssignment | ContinueStatement | StringInterpolation,
 	}
 }

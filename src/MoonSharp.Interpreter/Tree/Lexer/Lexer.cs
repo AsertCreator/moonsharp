@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 namespace MoonSharp.Interpreter.Tree
 {
@@ -14,6 +15,13 @@ namespace MoonSharp.Interpreter.Tree
 		int m_SourceId;
 		bool m_AutoSkipComments = false;
 		LuauFeatures m_LuauFeatures = LuauFeatures.None;
+
+		/// <summary>
+		/// One entry per interpolated string currently being read, holding the number of '{' opened
+		/// inside its current hole. A '}' seen with the top entry at zero closes the hole and puts us
+		/// back into string text; any other '}' is an ordinary one, closing a table or a block.
+		/// </summary>
+		List<int> m_InterpolationBraces = new List<int>();
 
 		public Lexer(int sourceID, string scriptContent, bool autoSkipComments, LuauFeatures luauFeatures = LuauFeatures.None)
 		{
@@ -31,6 +39,19 @@ namespace MoonSharp.Interpreter.Tree
 		private bool CompoundAssignmentEnabled
 		{
 			get { return (m_LuauFeatures & LuauFeatures.CompoundAssignment) != 0; }
+		}
+
+		private bool StringInterpolationEnabled
+		{
+			get { return (m_LuauFeatures & LuauFeatures.StringInterpolation) != 0; }
+		}
+
+		/// <summary>
+		/// True when the cursor is inside a hole of an interpolated string, so braces are tracked.
+		/// </summary>
+		private bool InInterpolationHole
+		{
+			get { return m_InterpolationBraces.Count > 0; }
 		}
 
 		public Token Current
@@ -68,6 +89,7 @@ namespace MoonSharp.Interpreter.Tree
 			Token current = m_Current;
 			int line = m_Line;
 			int col = m_Col;
+			List<int> interpolationBraces = new List<int>(m_InterpolationBraces);
 
 			Next();
 			Token t = Current;
@@ -76,6 +98,7 @@ namespace MoonSharp.Interpreter.Tree
 			m_Current = current;
 			m_Line = line;
 			m_Col = col;
+			m_InterpolationBraces = interpolationBraces;
 
 			return t;
 		}
@@ -216,7 +239,14 @@ namespace MoonSharp.Interpreter.Tree
 				case '^':
 					return PotentiallyCompoundAssignOperator(TokenType.Op_Pwr, TokenType.Op_PwrAssign, fromLine, fromCol);
 				case '$':
-					return PotentiallyDoubleCharOperator('{', TokenType.Op_Dollar, TokenType.Brk_Open_Curly_Shared, fromLine, fromCol);
+					{
+						Token dollar = PotentiallyDoubleCharOperator('{', TokenType.Op_Dollar, TokenType.Brk_Open_Curly_Shared, fromLine, fromCol);
+
+						if (dollar.Type == TokenType.Brk_Open_Curly_Shared && InInterpolationHole)
+							m_InterpolationBraces[m_InterpolationBraces.Count - 1] += 1;
+
+						return dollar;
+					}
 				case '#':
 					if (m_Cursor == 0 && m_Code.Length > 1 && m_Code[1] == '!')
 						return ReadHashBang(fromLine, fromCol);
@@ -239,9 +269,32 @@ namespace MoonSharp.Interpreter.Tree
 				case ')':
 					return CreateSingleCharToken(TokenType.Brk_Close_Round, fromLine, fromCol);
 				case '{':
+					if (InInterpolationHole)
+						m_InterpolationBraces[m_InterpolationBraces.Count - 1] += 1;
+
 					return CreateSingleCharToken(TokenType.Brk_Open_Curly, fromLine, fromCol);
 				case '}':
+					if (InInterpolationHole)
+					{
+						int top = m_InterpolationBraces.Count - 1;
+
+						if (m_InterpolationBraces[top] == 0)
+						{
+							CursorCharNext(); // skip the '}' which closes the hole
+							return ReadInterpolatedStringPart(fromLine, fromCol, false);
+						}
+
+						m_InterpolationBraces[top] -= 1;
+					}
+
 					return CreateSingleCharToken(TokenType.Brk_Close_Curly, fromLine, fromCol);
+				case '`':
+					if (!StringInterpolationEnabled)
+						throw new SyntaxErrorException(CreateToken(TokenType.Invalid, fromLine, fromCol), "unexpected symbol near '{0}'", c);
+
+					CursorCharNext(); // skip the opening backtick
+					m_InterpolationBraces.Add(0);
+					return ReadInterpolatedStringPart(fromLine, fromCol, true);
 				case ',':
 					return CreateSingleCharToken(TokenType.Comma, fromLine, fromCol);
 				case ':':
@@ -535,6 +588,109 @@ namespace MoonSharp.Interpreter.Tree
 			throw new SyntaxErrorException(
 				CreateToken(TokenType.Invalid, fromLine, fromCol),
 				"unfinished string near '{0}'", text.ToString()) { IsPrematureStreamTermination = true };
+		}
+
+
+		/// <summary>
+		/// Reads one run of literal text of an interpolated string, starting just past the opening
+		/// backtick (isFirst) or just past the '}' which closed the previous hole, and stopping at
+		/// the '{' which opens the next hole or at the closing backtick.
+		/// See https://rfcs.luau.org/syntax-string-interpolation.html
+		/// </summary>
+		private Token ReadInterpolatedStringPart(int fromLine, int fromCol, bool isFirst)
+		{
+			StringBuilder text = new StringBuilder(32);
+
+			while (true)
+			{
+				char c = CursorChar();
+
+				if (c == '\0' || !CursorNotEof())
+				{
+					throw new SyntaxErrorException(
+						CreateToken(TokenType.Invalid, fromLine, fromCol),
+						"unfinished string near '{0}'", text.ToString()) { IsPrematureStreamTermination = true };
+				}
+				else if (c == '\\')
+				{
+					ReadInterpolatedStringEscape(text);
+				}
+				else if (c == '\n' || c == '\r')
+				{
+					throw new SyntaxErrorException(
+						CreateToken(TokenType.Invalid, fromLine, fromCol),
+						"unfinished string near '{0}'", text.ToString());
+				}
+				else if (c == '{')
+				{
+					CursorCharNext(); // skip the '{' which opens the hole
+
+					// the RFC rejects '{{' outright, since anyone arriving from C#, Rust or Python
+					// reads it as an escape for a literal brace, which here it is not
+					if (CursorChar() == '{')
+					{
+						throw new SyntaxErrorException(
+							CreateToken(TokenType.Invalid, fromLine, fromCol),
+							"unexpected '{{' in interpolated string, use '\\{' for a literal brace");
+					}
+
+					return CreateInterpolatedStringToken(isFirst ? TokenType.String_InterpBegin : TokenType.String_InterpMid,
+						fromLine, fromCol, text.ToString());
+				}
+				else if (c == '`')
+				{
+					CursorCharNext(); // skip the closing backtick
+					m_InterpolationBraces.RemoveAt(m_InterpolationBraces.Count - 1);
+
+					// a string which never opened a hole still gets its own token type, so that the
+					// RFC's ban on 'print`x`' does not depend on whether the string has holes
+					return CreateInterpolatedStringToken(isFirst ? TokenType.String_Interp : TokenType.String_InterpEnd,
+						fromLine, fromCol, text.ToString());
+				}
+				else
+				{
+					text.Append(c);
+					CursorCharNext();
+				}
+			}
+		}
+
+		private Token CreateInterpolatedStringToken(TokenType tokenType, int fromLine, int fromCol, string text)
+		{
+			Token t = CreateToken(tokenType, fromLine, fromCol);
+			t.Text = LexerUtils.UnescapeLuaString(t, text);
+			return t;
+		}
+
+		/// <summary>
+		/// Consumes one escape sequence of an interpolated string. '\{' and '\`' are specific to
+		/// interpolated strings and are resolved here; everything else is kept verbatim for
+		/// UnescapeLuaString, including '\u{...}', whose braces must not be read as a hole.
+		/// </summary>
+		private void ReadInterpolatedStringEscape(StringBuilder text)
+		{
+			char c = CursorCharNext(); // the character after the backslash
+
+			if (c == '{' || c == '`')
+			{
+				text.Append(c);
+				CursorCharNext();
+				return;
+			}
+
+			text.Append('\\');
+			text.Append(c);
+
+			if (c == 'u')
+			{
+				for (c = CursorCharNext(); CursorNotEof() && c != '}'; c = CursorCharNext())
+					text.Append(c);
+
+				if (CursorNotEof())
+					text.Append(c); // the '}' closing the code point
+			}
+
+			CursorCharNext();
 		}
 
 
