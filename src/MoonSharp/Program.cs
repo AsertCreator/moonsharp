@@ -26,6 +26,8 @@ namespace MoonSharp
 
 			Script.DefaultOptions.ScriptLoader = new ReplInterpreterScriptLoader();
 
+			args = ExtractLuauOption(args);
+
 			Script script = new Script(CoreModules.Preset_Complete);
 
 			script.Globals["makestatic"] = (Func<string, DynValue>)(MakeStatic);
@@ -49,6 +51,26 @@ namespace MoonSharp
 					break;
 				}
 			}
+		}
+
+		/// <summary>
+		/// Takes '--luau' out of the command line, turning the Luau syntax extensions on for every
+		/// script the shell creates from then on, the REPL and !run included. The rest of the
+		/// command line is returned untouched, so the flag can sit anywhere in it.
+		/// </summary>
+		private static string[] ExtractLuauOption(string[] args)
+		{
+			List<string> rest = new List<string>();
+
+			foreach (string arg in args)
+			{
+				if (arg == "--luau")
+					Script.DefaultOptions.LuauFeatures = LuauFeatures.All;
+				else
+					rest.Add(arg);
+			}
+
+			return rest.ToArray();
 		}
 
 		private static DynValue MakeStatic(string type)
@@ -102,6 +124,10 @@ namespace MoonSharp
 		{
 			Console.WriteLine(Script.GetBanner("Console"));
 			Console.WriteLine();
+
+			if (Script.DefaultOptions.LuauFeatures != LuauFeatures.None)
+				Console.WriteLine("Luau syntax extensions enabled.\n");
+
 			Console.WriteLine("Type Lua code to execute it or type !help to see help on commands.\n");
 			Console.WriteLine("Welcome.\n");
 		}
@@ -180,17 +206,19 @@ namespace MoonSharp
 
 		private static void ShowCmdLineHelpBig()
 		{
-			Console.WriteLine("usage: moonsharp [-H | --help | -X \"command\" | -W <dumpfile> <destfile> [--internals] [--vb] [--class:<name>] [--namespace:<name>] | <script>]");
+			Console.WriteLine("usage: moonsharp [--luau] [-H | --help | -X \"command\" | -W <dumpfile> <destfile> [--internals] [--vb] [--class:<name>] [--namespace:<name>] | <script>]");
 			Console.WriteLine();
-			Console.WriteLine("-H : shows this help");
-			Console.WriteLine("-X : executes the specified command");
-			Console.WriteLine("-W : creates hardwire descriptors");
+			Console.WriteLine("-H     : shows this help");
+			Console.WriteLine("-X     : executes the specified command");
+			Console.WriteLine("-W     : creates hardwire descriptors");
+			Console.WriteLine("--luau : accepts the Luau syntax extensions (compound assignment,");
+			Console.WriteLine("         continue, string interpolation)");
 			Console.WriteLine();
 		}
 
 		private static void ShowCmdLineHelp()
 		{
-			Console.WriteLine("usage: moonsharp [-H | --help | -X \"command\" | -W <dumpfile> <destfile> [--internals] [--vb] | <script>]");
+			Console.WriteLine("usage: moonsharp [--luau] [-H | --help | -X \"command\" | -W <dumpfile> <destfile> [--internals] [--vb] | <script>]");
 		}
 
 		private static void ExecuteCommand(ShellContext shellContext, string cmdline)
