@@ -41,9 +41,16 @@ namespace MoonSharp.Interpreter
 		IfExpression = 0x8,
 
 		/// <summary>
+		/// The floor division operator '//', which is 'math.floor(a / b)', and its compound form
+		/// '//='. The compound form additionally needs <see cref="CompoundAssignment"/>.
+		/// See https://rfcs.luau.org/syntax-floor-division-operator.html
+		/// </summary>
+		FloorDivision = 0x10,
+
+		/// <summary>
 		/// All the Luau extensions supported by this version of MoonSharp. Note that this is not
 		/// version stable - scripts relying on a specific set of extensions should name them.
 		/// </summary>
-		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression,
+		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression | FloorDivision,
 	}
 }

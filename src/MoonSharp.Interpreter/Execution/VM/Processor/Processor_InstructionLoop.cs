@@ -86,6 +86,10 @@ namespace MoonSharp.Interpreter.Execution.VM
 							instructionPtr = ExecDiv(i, instructionPtr);
 							if (instructionPtr == YIELD_SPECIAL_TRAP) goto yield_to_calling_coroutine;
 							break;
+						case OpCode.FloorDiv:
+							instructionPtr = ExecFloorDiv(i, instructionPtr);
+							if (instructionPtr == YIELD_SPECIAL_TRAP) goto yield_to_calling_coroutine;
+							break;
 						case OpCode.Mod:
 							instructionPtr = ExecMod(i, instructionPtr);
 							if (instructionPtr == YIELD_SPECIAL_TRAP) goto yield_to_calling_coroutine;
@@ -1021,6 +1025,29 @@ namespace MoonSharp.Interpreter.Execution.VM
 				else throw ScriptRuntimeException.ArithmeticOnNonNumber(l, r);
 			}
 		}
+		private int ExecFloorDiv(Instruction i, int instructionPtr)
+		{
+			DynValue r = m_ValueStack.Pop().ToScalar();
+			DynValue l = m_ValueStack.Pop().ToScalar();
+
+			double? rn = r.CastToNumber();
+			double? ln = l.CastToNumber();
+
+			if (ln.HasValue && rn.HasValue)
+			{
+				// every MoonSharp number is a double, as every Luau one is, so this is the whole of
+				// it - no integer/float split to make, and dividing by zero still yields an infinity
+				m_ValueStack.Push(DynValue.NewNumber(Math.Floor(ln.Value / rn.Value)));
+				return instructionPtr;
+			}
+			else
+			{
+				int ip = Internal_InvokeBinaryMetaMethod(l, r, "__idiv", instructionPtr);
+				if (ip >= 0) return ip;
+				else throw ScriptRuntimeException.ArithmeticOnNonNumber(l, r);
+			}
+		}
+
 		private int ExecPower(Instruction i, int instructionPtr)
 		{
 			DynValue r = m_ValueStack.Pop().ToScalar();

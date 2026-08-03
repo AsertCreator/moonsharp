@@ -26,6 +26,7 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 			StrConcat = 0x100,
 			Add = 0x200,
 			Sub = 0x400,
+			FloorDiv = 0x800,
 			Mul = 0x1000,
 			Div = 0x2000,
 			Mod = 0x4000,
@@ -49,7 +50,7 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 		}
 
 		const Operator POWER = Operator.Power;
-		const Operator MUL_DIV_MOD = Operator.Mul | Operator.Div | Operator.Mod;
+		const Operator MUL_DIV_MOD = Operator.Mul | Operator.Div | Operator.FloorDiv | Operator.Mod;
 		const Operator ADD_SUB = Operator.Add | Operator.Sub;
 		const Operator STRCAT = Operator.StrConcat;
 		const Operator COMPARES = Operator.Less | Operator.Greater | Operator.GreaterOrEqual | Operator.LessOrEqual | Operator.Equal | Operator.NotEqual;
@@ -232,6 +233,8 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 					return Operator.Mul;
 				case TokenType.Op_Div:
 					return Operator.Div;
+				case TokenType.Op_FloorDiv:
+					return Operator.FloorDiv;
 				case TokenType.Op_Mod:
 					return Operator.Mod;
 				case TokenType.Op_Pwr:
@@ -287,6 +290,8 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 					return OpCode.Mul;
 				case Operator.Div:
 					return OpCode.Div;
+				case Operator.FloorDiv:
+					return OpCode.FloorDiv;
 				case Operator.Mod:
 					return OpCode.Mod;
 				case Operator.Power:
@@ -392,6 +397,8 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 					return d1 * d2;
 				case Operator.Div:
 					return d1 / d2;
+				case Operator.FloorDiv:
+					return Math.Floor(d1 / d2);
 				case Operator.Mod:
 					{
 						double mod = Math.IEEERemainder(d1, d2);

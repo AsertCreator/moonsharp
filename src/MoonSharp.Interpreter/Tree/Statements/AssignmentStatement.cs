@@ -138,6 +138,8 @@ namespace MoonSharp.Interpreter.Tree.Statements
 					return Execution.VM.OpCode.Mul;
 				case TokenType.Op_DivAssign:
 					return Execution.VM.OpCode.Div;
+				case TokenType.Op_FloorDivAssign:
+					return Execution.VM.OpCode.FloorDiv;
 				case TokenType.Op_ModAssign:
 					return Execution.VM.OpCode.Mod;
 				case TokenType.Op_PwrAssign:

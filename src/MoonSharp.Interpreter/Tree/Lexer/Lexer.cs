@@ -46,6 +46,11 @@ namespace MoonSharp.Interpreter.Tree
 			get { return (m_LuauFeatures & LuauFeatures.StringInterpolation) != 0; }
 		}
 
+		private bool FloorDivisionEnabled
+		{
+			get { return (m_LuauFeatures & LuauFeatures.FloorDivision) != 0; }
+		}
+
 		/// <summary>
 		/// True when the cursor is inside a hole of an interpolated string, so braces are tracked.
 		/// </summary>
@@ -233,7 +238,7 @@ namespace MoonSharp.Interpreter.Tree
 				case '*':
 					return PotentiallyCompoundAssignOperator(TokenType.Op_Mul, TokenType.Op_MulAssign, fromLine, fromCol);
 				case '/':
-					return PotentiallyCompoundAssignOperator(TokenType.Op_Div, TokenType.Op_DivAssign, fromLine, fromCol);
+					return ReadSlashToken(fromLine, fromCol);
 				case '%':
 					return PotentiallyCompoundAssignOperator(TokenType.Op_Mod, TokenType.Op_ModAssign, fromLine, fromCol);
 				case '^':
@@ -720,6 +725,41 @@ namespace MoonSharp.Interpreter.Tree
 				return CreateSingleCharToken(singleCharToken, fromLine, fromCol);
 
 			return PotentiallyDoubleCharOperator('=', singleCharToken, compoundAssignToken, fromLine, fromCol);
+		}
+
+
+		/// <summary>
+		/// Disambiguates the tokens starting with '/' : '/', '/=', '//' and '//='.
+		/// Called with the cursor on the slash.
+		///
+		/// '//=' needs LuauFeatures.CompoundAssignment as well as LuauFeatures.FloorDivision,
+		/// since it is both. With floor division off the two slashes lex as two separate '/'
+		/// tokens, exactly as they did before the operator existed.
+		/// </summary>
+		private Token ReadSlashToken(int fromLine, int fromCol)
+		{
+			char next = CursorCharNext();
+
+			if (next == '/' && FloorDivisionEnabled)
+			{
+				// this consumes the second slash whichever branch is taken, which is what '//' wants too
+				if (CursorCharNext() == '=' && CompoundAssignmentEnabled)
+				{
+					CursorCharNext();
+					return CreateToken(TokenType.Op_FloorDivAssign, fromLine, fromCol, "//=");
+				}
+
+				return CreateToken(TokenType.Op_FloorDiv, fromLine, fromCol, "//");
+			}
+			else if (next == '=' && CompoundAssignmentEnabled)
+			{
+				CursorCharNext();
+				return CreateToken(TokenType.Op_DivAssign, fromLine, fromCol, "/=");
+			}
+			else
+			{
+				return CreateToken(TokenType.Op_Div, fromLine, fromCol, "/");
+			}
 		}
 
 

@@ -50,6 +50,7 @@ namespace MoonSharp.Interpreter.Execution.VM
 		Sub,		// Subtraction of the two topmost operands on the v-stack
 		Mul,		// Multiplication of the two topmost operands on the v-stack
 		Div,		// Division of the two topmost operands on the v-stack
+		FloorDiv,	// Floor division of the two topmost operands on the v-stack
 		Mod,		// Modulus of the two topmost operands on the v-stack
 		Not,		// Logical inversion of the topmost operand on the v-stack
 		Len,		// Size operator of the topmost operand on the v-stack

@@ -135,6 +135,55 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		}
 
 		// ---------------------------------------------------------------
+		// Floor division is off by default, in which case '//' is two
+		// separate division operators
+		// ---------------------------------------------------------------
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void FloorDiv_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("return 7 // 2;");
+		}
+
+		[Test]
+		public void FloorDiv_WorksWhenEnabled()
+		{
+			DynValue res = NewScript(LuauFeatures.FloorDivision).DoString("return 7 // 2;");
+			Assert.AreEqual(3, res.Number);
+		}
+
+		[Test]
+		public void Disabled_DivisionStillParses()
+		{
+			DynValue res = NewScript(LuauFeatures.None).DoString("return 10 / 4;");
+			Assert.AreEqual(2.5, res.Number);
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void FloorDivAssign_NeedsCompoundAssignmentToo()
+		{
+			// '//=' is a compound assignment as much as it is a floor division
+			NewScript(LuauFeatures.FloorDivision).DoString("local x = 7; x //= 2; return x;");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void FloorDivAssign_NeedsFloorDivisionToo()
+		{
+			NewScript(LuauFeatures.CompoundAssignment).DoString("local x = 7; x //= 2; return x;");
+		}
+
+		[Test]
+		public void FloorDivAssign_WorksWithBothEnabled()
+		{
+			DynValue res = NewScript(LuauFeatures.FloorDivision | LuauFeatures.CompoundAssignment)
+				.DoString("local x = 7; x //= 2; return x;");
+			Assert.AreEqual(3, res.Number);
+		}
+
+		// ---------------------------------------------------------------
 		// The flags are independent
 		// ---------------------------------------------------------------
 

@@ -137,6 +137,7 @@ namespace MoonSharp.Interpreter.Tree
 				case TokenType.Op_Pwr:
 				case TokenType.Op_Mod:
 				case TokenType.Op_Div:
+				case TokenType.Op_FloorDiv:
 				case TokenType.Op_Mul:
 				case TokenType.Op_MinusOrSub:
 				case TokenType.Op_Add:
@@ -147,7 +148,7 @@ namespace MoonSharp.Interpreter.Tree
 		}
 
 		/// <summary>
-		/// Whether this token is one of the compound assignment operators (+=, -=, *=, /=, %=, ^=, ..=).
+		/// Whether this token is one of the compound assignment operators (+=, -=, *=, /=, //=, %=, ^=, ..=).
 		/// Note these are deliberately NOT binary operators: they are only ever valid as the head of an
 		/// assignment statement, which is what keeps 'a = (b += 1)' a syntax error.
 		/// </summary>
@@ -159,6 +160,7 @@ namespace MoonSharp.Interpreter.Tree
 				case TokenType.Op_SubAssign:
 				case TokenType.Op_MulAssign:
 				case TokenType.Op_DivAssign:
+				case TokenType.Op_FloorDivAssign:
 				case TokenType.Op_ModAssign:
 				case TokenType.Op_PwrAssign:
 				case TokenType.Op_ConcatAssign:

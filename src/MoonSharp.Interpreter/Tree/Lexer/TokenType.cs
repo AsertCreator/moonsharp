@@ -87,6 +87,10 @@ namespace MoonSharp.Interpreter.Tree
 		String_InterpBegin,
 		String_InterpMid,
 		String_InterpEnd,
+
+		// Floor division - https://rfcs.luau.org/syntax-floor-division-operator.html
+		Op_FloorDiv,
+		Op_FloorDivAssign,
 	}
 
 
