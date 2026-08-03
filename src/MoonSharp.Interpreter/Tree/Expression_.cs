@@ -153,6 +153,12 @@ namespace MoonSharp.Interpreter.Tree
 					return new FunctionDefinitionExpression(lcontext, false, false);
 				case TokenType.Lambda:
 					return new FunctionDefinitionExpression(lcontext, false, true);
+				case TokenType.If:
+					// a statement starting with 'if' has already been claimed by IfStatement, so
+					// this is only reached where a value is expected
+					if ((lcontext.Script.Options.LuauFeatures & LuauFeatures.IfExpression) != 0)
+						return new IfExpression(lcontext);
+					goto default;
 				default:
 					return PrimaryExp(lcontext);
 			}

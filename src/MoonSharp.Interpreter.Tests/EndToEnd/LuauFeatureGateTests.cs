@@ -106,6 +106,35 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		}
 
 		// ---------------------------------------------------------------
+		// The if-then-else expression is off by default, in which case 'if'
+		// only ever starts a statement
+		// ---------------------------------------------------------------
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void IfExpression_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("return if true then 1 else 2;");
+		}
+
+		[Test]
+		public void IfExpression_WorksWhenEnabled()
+		{
+			DynValue res = NewScript(LuauFeatures.IfExpression).DoString("return if true then 1 else 2;");
+			Assert.AreEqual(1, res.Number);
+		}
+
+		[Test]
+		public void Disabled_IfStatementStillParses()
+		{
+			DynValue res = NewScript(LuauFeatures.None).DoString(@"
+				local x = 0
+				if false then x = 1 elseif true then x = 3 else x = 2 end
+				return x;");
+			Assert.AreEqual(3, res.Number);
+		}
+
+		// ---------------------------------------------------------------
 		// The flags are independent
 		// ---------------------------------------------------------------
 
@@ -121,6 +150,20 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		public void CompoundAssignmentEnabled_DoesNotEnableContinue()
 		{
 			NewScript(LuauFeatures.CompoundAssignment).DoString("for i = 1, 3 do continue end");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void IfExpressionEnabled_DoesNotEnableCompoundAssignment()
+		{
+			NewScript(LuauFeatures.IfExpression).DoString("local x = 1; x += 1; return x;");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void ContinueEnabled_DoesNotEnableIfExpression()
+		{
+			NewScript(LuauFeatures.ContinueStatement).DoString("return if true then 1 else 2;");
 		}
 
 		// ---------------------------------------------------------------

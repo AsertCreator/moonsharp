@@ -34,9 +34,16 @@ namespace MoonSharp.Interpreter
 		StringInterpolation = 0x4,
 
 		/// <summary>
+		/// The 'if ... then ... else ...' expression, which yields a value instead of running a
+		/// block: 'local s = if x &lt; 0 then -1 else 1'. The else branch is mandatory.
+		/// See https://rfcs.luau.org/syntax-if-expression.html
+		/// </summary>
+		IfExpression = 0x8,
+
+		/// <summary>
 		/// All the Luau extensions supported by this version of MoonSharp. Note that this is not
 		/// version stable - scripts relying on a specific set of extensions should name them.
 		/// </summary>
-		All = CompoundAssignment | ContinueStatement | StringInterpolation,
+		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression,
 	}
 }
