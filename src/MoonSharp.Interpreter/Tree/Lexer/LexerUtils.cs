@@ -32,6 +32,43 @@ namespace MoonSharp.Interpreter.Tree
 			return (double)res;
 		}
 
+		/// <summary>
+		/// Parses a Luau binary literal ('0b1010'). Any digit separators are already gone by the
+		/// time the token gets here, so anything left which is not a 0 or a 1 is malformed.
+		/// </summary>
+		public static double ParseBinaryInteger(Token T)
+		{
+			string txt = T.Text;
+
+			if ((txt.Length < 2) || (txt[0] != '0') || (char.ToUpper(txt[1]) != 'B'))
+				throw new InternalErrorException("binary numbers must start with '0b' near '{0}'.", txt);
+
+			string digits = txt.Substring(2);
+
+			if (digits.Length == 0)
+				throw new SyntaxErrorException(T, "malformed number near '{0}'", txt);
+
+			ulong res = 0;
+			int significantBits = 0;
+
+			foreach (char c in digits)
+			{
+				if (c != '0' && c != '1')
+					throw new SyntaxErrorException(T, "malformed number near '{0}'", txt);
+
+				// leading zeroes are free, everything after the first 1 has to fit in 64 bits
+				if (res != 0 || c == '1')
+				{
+					if (++significantBits > 64)
+						throw new SyntaxErrorException(T, "malformed number near '{0}'", txt);
+				}
+
+				res = (res << 1) | (ulong)(c - '0');
+			}
+
+			return (double)res;
+		}
+
 		public static string ReadHexProgressive(string s, ref double d, out int digits)
 		{
 			digits = 0;

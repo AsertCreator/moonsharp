@@ -184,6 +184,39 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		}
 
 		// ---------------------------------------------------------------
+		// The number literal extensions are off by default, in which case
+		// '0b1010' is 0 followed by a name and '1_000' is 1 followed by one
+		// ---------------------------------------------------------------
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void BinaryLiteral_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("local x = 0b1010; return x;");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void DigitSeparator_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("local x = 1_000; return x;");
+		}
+
+		[Test]
+		public void NumberLiterals_WorkWhenEnabled()
+		{
+			DynValue res = NewScript(LuauFeatures.NumberLiterals).DoString("return 0b1010 + 1_000;");
+			Assert.AreEqual(1010, res.Number);
+		}
+
+		[Test]
+		public void Disabled_HexAndExponentsStillParse()
+		{
+			DynValue res = NewScript(LuauFeatures.None).DoString("return 0x1F + 1e3 + .5 + 0x10p4;");
+			Assert.AreEqual(31 + 1000 + 0.5 + 256, res.Number);
+		}
+
+		// ---------------------------------------------------------------
 		// The flags are independent
 		// ---------------------------------------------------------------
 

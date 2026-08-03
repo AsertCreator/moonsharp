@@ -91,6 +91,9 @@ namespace MoonSharp.Interpreter.Tree
 		// Floor division - https://rfcs.luau.org/syntax-floor-division-operator.html
 		Op_FloorDiv,
 		Op_FloorDivAssign,
+
+		// Binary literals - https://luau.org/syntax
+		Number_Binary,
 	}
 
 

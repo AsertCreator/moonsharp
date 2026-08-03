@@ -96,6 +96,8 @@ namespace MoonSharp.Interpreter.Tree
 				return LexerUtils.ParseHexInteger(this);
 			else if (this.Type == TokenType.Number_HexFloat)
 				return LexerUtils.ParseHexFloat(this);
+			else if (this.Type == TokenType.Number_Binary)
+				return LexerUtils.ParseBinaryInteger(this);
 			else
 				throw new NotSupportedException("GetNumberValue is supported only on numeric tokens");
 		}

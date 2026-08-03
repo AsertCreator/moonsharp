@@ -134,6 +134,7 @@ namespace MoonSharp.Interpreter.Tree
 				case TokenType.Number:
 				case TokenType.Number_Hex:
 				case TokenType.Number_HexFloat:
+				case TokenType.Number_Binary:
 				case TokenType.String:
 				case TokenType.String_Long:
 				case TokenType.String_Interp:

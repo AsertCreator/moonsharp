@@ -48,9 +48,16 @@ namespace MoonSharp.Interpreter
 		FloorDivision = 0x10,
 
 		/// <summary>
+		/// Binary number literals ('0b1010') and digit separators ('1_000_000', '0xDE_AD_BE_EF').
+		/// A separator is purely visual and may sit anywhere inside a number, as in Luau.
+		/// See https://luau.org/syntax
+		/// </summary>
+		NumberLiterals = 0x20,
+
+		/// <summary>
 		/// All the Luau extensions supported by this version of MoonSharp. Note that this is not
 		/// version stable - scripts relying on a specific set of extensions should name them.
 		/// </summary>
-		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression | FloorDivision,
+		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression | FloorDivision | NumberLiterals,
 	}
 }

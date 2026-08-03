@@ -27,6 +27,7 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 				case TokenType.Number:
 				case TokenType.Number_Hex:
 				case TokenType.Number_HexFloat:
+				case TokenType.Number_Binary:
 					m_Value = DynValue.NewNumber(t.GetNumberValue()).AsReadOnly();
 					break;
 				case TokenType.String:

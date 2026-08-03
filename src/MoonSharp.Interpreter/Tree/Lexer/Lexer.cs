@@ -51,6 +51,11 @@ namespace MoonSharp.Interpreter.Tree
 			get { return (m_LuauFeatures & LuauFeatures.FloorDivision) != 0; }
 		}
 
+		private bool NumberLiteralsEnabled
+		{
+			get { return (m_LuauFeatures & LuauFeatures.NumberLiterals) != 0; }
+		}
+
 		/// <summary>
 		/// True when the cursor is inside a hole of an interpolated string, so braces are tracked.
 		/// </summary>
@@ -408,8 +413,13 @@ namespace MoonSharp.Interpreter.Tree
 			//
 			// ExponentPart : [eE] [+-]? Digit+
 			// HexExponentPart : [pP] [+-]? Digit+
+			//
+			// With LuauFeatures.NumberLiterals there is also
+			//BINARY : '0' [bB] BinDigit+
+			// and a '_' may appear anywhere inside any of the above, where it means nothing.
 
 			bool isHex = false;
+			bool isBinary = false;
 			bool dotAdded = false;
 			bool exponentPart = false;
 			bool exponentSignAllowed = false;
@@ -426,6 +436,12 @@ namespace MoonSharp.Interpreter.Tree
 				if (secondChar == 'x' || secondChar == 'X')
 				{
 					isHex = true;
+					text.Append(CursorChar());
+					CursorCharNext();
+				}
+				else if ((secondChar == 'b' || secondChar == 'B') && NumberLiteralsEnabled)
+				{
+					isBinary = true;
 					text.Append(CursorChar());
 					CursorCharNext();
 				}
@@ -458,6 +474,11 @@ namespace MoonSharp.Interpreter.Tree
 					exponentSignAllowed = true;
 					dotAdded = true;
 				}
+				else if (c == '_' && NumberLiteralsEnabled)
+				{
+					// a separator carries no meaning, so it is dropped here rather than being
+					// carried into the token text for the number parsers to deal with
+				}
 				else
 				{
 					break;
@@ -466,7 +487,9 @@ namespace MoonSharp.Interpreter.Tree
 
 			TokenType numberType = TokenType.Number;
 
-			if (isHex && (dotAdded || exponentPart))
+			if (isBinary)
+				numberType = TokenType.Number_Binary;
+			else if (isHex && (dotAdded || exponentPart))
 				numberType = TokenType.Number_HexFloat;
 			else if (isHex)
 				numberType = TokenType.Number_Hex;
