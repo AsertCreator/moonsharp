@@ -30,6 +30,8 @@ namespace MoonSharp.Interpreter.Tree.Statements
 				Token name = CheckTokenType(lcontext, TokenType.Name);
 				names.Add(name.Text);
 
+				TypeAnnotation.SkipOptionalAnnotation(lcontext);
+
 				if (lcontext.Lexer.Current.Type != TokenType.Comma)
 					break;
 

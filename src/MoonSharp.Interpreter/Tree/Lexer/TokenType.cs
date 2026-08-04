@@ -94,6 +94,13 @@ namespace MoonSharp.Interpreter.Tree
 
 		// Binary literals - https://luau.org/syntax
 		Number_Binary,
+
+		// Type annotations - https://luau.org/typecheck
+		// '|' reuses TokenType.Lambda and '::' reuses TokenType.DoubleColon, since a type context
+		// can never contain a lambda or a label.
+		Arrow,			// '->' in a function type
+		Op_Question,	// '?' for optional types
+		Op_Ampersand,	// '&' for intersection types
 	}
 
 

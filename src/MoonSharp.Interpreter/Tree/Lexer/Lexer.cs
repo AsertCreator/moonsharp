@@ -56,6 +56,11 @@ namespace MoonSharp.Interpreter.Tree
 			get { return (m_LuauFeatures & LuauFeatures.NumberLiterals) != 0; }
 		}
 
+		private bool TypeAnnotationsEnabled
+		{
+			get { return (m_LuauFeatures & LuauFeatures.TypeAnnotations) != 0; }
+		}
+
 		/// <summary>
 		/// True when the cursor is inside a hole of an interpolated string, so braces are tracked.
 		/// </summary>
@@ -91,6 +96,50 @@ namespace MoonSharp.Interpreter.Tree
 		public void Next()
 		{
 			m_Current = FetchNewToken();
+		}
+
+		/// <summary>
+		/// Whether the '::' the cursor is on opens a goto label ('::name::') rather than a Luau
+		/// type assertion ('expr :: type'). The two are indistinguishable until three tokens in,
+		/// which is one more than PeekNext offers, so this snapshots and restores the same way.
+		///
+		/// A chained assertion ('x :: any :: number') looks identical to a label from here and so
+		/// loses, which is why it needs parentheses when type annotations are enabled. Labels win
+		/// because they are ordinary Lua and may appear in scripts that never asked for any of
+		/// this, whereas chained assertions only ever appear in source written against Luau.
+		/// </summary>
+		public bool IsAtGotoLabel()
+		{
+			int snapshot = m_Cursor;
+			Token current = m_Current;
+			int line = m_Line;
+			int col = m_Col;
+			List<int> interpolationBraces = new List<int>(m_InterpolationBraces);
+
+			try
+			{
+				Next();
+
+				if (Current.Type != TokenType.Name)
+					return false;
+
+				Next();
+
+				return Current.Type == TokenType.DoubleColon;
+			}
+			catch (SyntaxErrorException)
+			{
+				// whatever is ahead does not lex, so it is not a label - let the real parse report it
+				return false;
+			}
+			finally
+			{
+				m_Cursor = snapshot;
+				m_Current = current;
+				m_Line = line;
+				m_Col = col;
+				m_InterpolationBraces = interpolationBraces;
+			}
 		}
 
 		public Token PeekNext()
@@ -235,6 +284,11 @@ namespace MoonSharp.Interpreter.Tree
 							CursorCharNext();
 							return CreateToken(TokenType.Op_SubAssign, fromLine, fromCol, "-=");
 						}
+						else if (next == '>' && TypeAnnotationsEnabled)
+						{
+							CursorCharNext();
+							return CreateToken(TokenType.Arrow, fromLine, fromCol, "->");
+						}
 						else
 						{
 							return CreateToken(TokenType.Op_MinusOrSub, fromLine, fromCol, "-");
@@ -305,6 +359,16 @@ namespace MoonSharp.Interpreter.Tree
 					CursorCharNext(); // skip the opening backtick
 					m_InterpolationBraces.Add(0);
 					return ReadInterpolatedStringPart(fromLine, fromCol, true);
+				case '?':
+					if (!TypeAnnotationsEnabled)
+						throw new SyntaxErrorException(CreateToken(TokenType.Invalid, fromLine, fromCol), "unexpected symbol near '{0}'", c);
+
+					return CreateSingleCharToken(TokenType.Op_Question, fromLine, fromCol);
+				case '&':
+					if (!TypeAnnotationsEnabled)
+						throw new SyntaxErrorException(CreateToken(TokenType.Invalid, fromLine, fromCol), "unexpected symbol near '{0}'", c);
+
+					return CreateSingleCharToken(TokenType.Op_Ampersand, fromLine, fromCol);
 				case ',':
 					return CreateSingleCharToken(TokenType.Comma, fromLine, fromCol);
 				case ':':

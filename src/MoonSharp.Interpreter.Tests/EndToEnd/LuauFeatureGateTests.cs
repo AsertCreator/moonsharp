@@ -217,6 +217,73 @@ namespace MoonSharp.Interpreter.Tests.EndToEnd
 		}
 
 		// ---------------------------------------------------------------
+		// Type annotations are off by default
+		// ---------------------------------------------------------------
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void LocalAnnotation_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("local x: number = 1; return x;");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void TypeAlias_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("type Count = number");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void Assertion_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("local x = 1 return x :: number;");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void QuestionMark_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("return 1 ? 2;");
+		}
+
+		[Test]
+		[ExpectedException(typeof(SyntaxErrorException))]
+		public void Ampersand_IsSyntaxErrorWhenDisabled()
+		{
+			NewScript(LuauFeatures.None).DoString("return 1 & 2;");
+		}
+
+		[Test]
+		public void TypeAnnotations_WorkWhenEnabled()
+		{
+			DynValue res = NewScript(LuauFeatures.TypeAnnotations).DoString("local x: number = 1; return x;");
+			Assert.AreEqual(1, res.Number);
+		}
+
+		[Test]
+		public void Disabled_LabelsAndGotoStillWork()
+		{
+			DynValue res = NewScript(LuauFeatures.None).DoString(@"
+				local i = 0
+				::top::
+				i = i + 1
+				if i < 3 then goto top end
+				return i;");
+			Assert.AreEqual(3, res.Number);
+		}
+
+		[Test]
+		public void Disabled_MethodCallColonStillParses()
+		{
+			DynValue res = NewScript(LuauFeatures.None).DoString(@"
+				local t = { v = 4, get = function(self) return self.v end }
+				return t:get();");
+			Assert.AreEqual(4, res.Number);
+		}
+
+		// ---------------------------------------------------------------
 		// The flags are independent
 		// ---------------------------------------------------------------
 

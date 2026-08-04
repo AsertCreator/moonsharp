@@ -38,10 +38,17 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 			if (m_UsesGlobalEnv = usesGlobalEnv)
 				CheckTokenType(lcontext, TokenType.Function);
 
+			// a generic parameter declaration sits between the name and the '(' - 'function f<T>(x: T)'
+			TypeAnnotation.SkipOptionalGenericParams(lcontext);
+
 			// here lexer should be at the '(' or at the '|'
 			Token openRound = CheckTokenType(lcontext, isLambda ? TokenType.Lambda : TokenType.Brk_Open_Round);
 
 			List<string> paramnames = BuildParamList(lcontext, pushSelfParam, openRound, isLambda);
+
+			if (!isLambda)
+				TypeAnnotation.SkipOptionalReturnAnnotation(lcontext);
+
 			// here lexer is at first token of body
 
 			m_Begin = openRound.GetSourceRefUpTo(lcontext.Lexer.Current);
@@ -132,6 +139,9 @@ namespace MoonSharp.Interpreter.Tree.Expressions
 					UnexpectedTokenType(t);
 
 				lcontext.Lexer.Next();
+
+				// covers both 'a: number' and the varargs form '...: number'
+				TypeAnnotation.SkipOptionalAnnotation(lcontext);
 
 				t = lcontext.Lexer.Current;
 

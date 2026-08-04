@@ -102,6 +102,18 @@ namespace MoonSharp.Interpreter.Tree
 				e = SimpleExp(lcontext);
 			}
 
+			// a type assertion, 'expr :: number'. It binds tighter than any binary operator and
+			// is discarded, so it never changes the value of the expression it is applied to.
+			// A '::' which opens a goto label is left alone - see Lexer.IsAtGotoLabel
+			if (TypeAnnotation.IsEnabled(lcontext))
+			{
+				while (lcontext.Lexer.Current.Type == TokenType.DoubleColon && !lcontext.Lexer.IsAtGotoLabel())
+				{
+					lcontext.Lexer.Next();
+					TypeAnnotation.SkipType(lcontext);
+				}
+			}
+
 			T = lcontext.Lexer.Current;
 
 			if (isPrimary && T.IsBinaryOperator())

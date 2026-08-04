@@ -25,11 +25,15 @@ namespace MoonSharp.Interpreter.Tree.Statements
 			List<string> names = new List<string>();
 			names.Add(firstNameToken.Text);
 
+			// the first name's annotation was already skipped by the for-loop dispatcher
+
 			while (lcontext.Lexer.Current.Type == TokenType.Comma)
 			{
 				lcontext.Lexer.Next();
 				Token name = CheckTokenType(lcontext, TokenType.Name);
 				names.Add(name.Text);
+
+				TypeAnnotation.SkipOptionalAnnotation(lcontext);
 			}
 
 			CheckTokenType(lcontext, TokenType.In);

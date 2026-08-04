@@ -56,6 +56,8 @@ namespace MoonSharp.Interpreter.Tree
 						forceLast = true;
 						return new ContinueStatement(lcontext);
 					}
+					if (TypeAliasStatement.IsTypeAlias(lcontext, tkn))
+						return new TypeAliasStatement(lcontext);
 					goto default;
 				default:
 					{
@@ -115,6 +117,10 @@ namespace MoonSharp.Interpreter.Tree
 			Token forTkn = CheckTokenType(lcontext, TokenType.For);
 
 			Token name = CheckTokenType(lcontext, TokenType.Name);
+
+			// 'for i: number = 1, 10' and 'for k: string, v in ...' both annotate the first name
+			// here, before the '=' vs ',' decides which kind of loop this is
+			TypeAnnotation.SkipOptionalAnnotation(lcontext);
 
 			if (lcontext.Lexer.Current.Type == TokenType.Op_Assignment)
 				return new ForLoopStatement(lcontext, name, forTkn);

@@ -45,11 +45,12 @@ namespace MoonSharp.Interpreter.Tree.Statements
 				m_FuncSymbol = lcontext.Scope.Find(firstName);
 				m_FriendlyName = firstName;
 
-				if (lcontext.Lexer.Current.Type != TokenType.Brk_Open_Round)
+				// generic parameters end the name path just as the '(' does - 'function t.f<T>()'
+				if (lcontext.Lexer.Current.Type != TokenType.Brk_Open_Round && !TypeAnnotation.AtGenericParams(lcontext))
 				{
 					m_TableAccessors = new List<string>();
 
-					while (lcontext.Lexer.Current.Type != TokenType.Brk_Open_Round)
+					while (lcontext.Lexer.Current.Type != TokenType.Brk_Open_Round && !TypeAnnotation.AtGenericParams(lcontext))
 					{
 						Token separator = lcontext.Lexer.Current;
 

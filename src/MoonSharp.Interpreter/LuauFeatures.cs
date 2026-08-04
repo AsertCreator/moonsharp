@@ -55,9 +55,25 @@ namespace MoonSharp.Interpreter
 		NumberLiterals = 0x20,
 
 		/// <summary>
+		/// Type annotations: 'local x: number', parameter and return types, generic parameters,
+		/// 'type' and 'export type' aliases, and the 'expr :: T' assertion.
+		///
+		/// MoonSharp has no type checker, so every annotation is parsed for syntax and then
+		/// discarded. Nothing here affects what a script does at run time; it exists so that
+		/// annotated Luau source loads instead of failing to parse.
+		///
+		/// Note this makes '::' ambiguous with a goto label, which Luau does not have because it
+		/// dropped goto. The label wins: '::name::' is always a label, so a chained assertion
+		/// has to be parenthesised as '(x :: any) :: number' while this is enabled. Ordinary Lua
+		/// keeps working either way, which a script that never asked for any of this relies on.
+		/// See https://luau.org/typecheck
+		/// </summary>
+		TypeAnnotations = 0x40,
+
+		/// <summary>
 		/// All the Luau extensions supported by this version of MoonSharp. Note that this is not
 		/// version stable - scripts relying on a specific set of extensions should name them.
 		/// </summary>
-		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression | FloorDivision | NumberLiterals,
+		All = CompoundAssignment | ContinueStatement | StringInterpolation | IfExpression | FloorDivision | NumberLiterals | TypeAnnotations,
 	}
 }
