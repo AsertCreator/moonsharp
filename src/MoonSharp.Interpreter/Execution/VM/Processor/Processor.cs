@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using MoonSharp.Interpreter.DataStructs;
 using MoonSharp.Interpreter.Debugging;
@@ -83,7 +84,44 @@ namespace MoonSharp.Interpreter.Execution.VM
 				try
 				{
 					int entrypoint = PushClrToScriptStackFrame(CallStackItemFlags.CallEntryPoint, function, args);
-					return Processing_Loop(entrypoint);
+					return Processing_Loop(entrypoint, null, 999999999);
+				}
+				finally
+				{
+					m_CanYield = true;
+
+					if (stopwatch != null)
+						stopwatch.Dispose();
+				}
+			}
+			finally
+			{
+				LeaveProcessor();
+			}
+		}
+
+		public DynValue CallWithTimeout(DynValue function, DynValue[] args, int milliseconds)
+		{
+			List<Processor> coroutinesStack = m_Parent != null ? m_Parent.m_CoroutinesStack : this.m_CoroutinesStack;
+
+			if (coroutinesStack.Count > 0 && coroutinesStack[coroutinesStack.Count - 1] != this)
+				return coroutinesStack[coroutinesStack.Count - 1].Call(function, args);
+
+			EnterProcessor();
+
+			Stopwatch stopwatch1 = new Stopwatch();
+			stopwatch1.Start();
+
+			try
+			{
+				var stopwatch = this.m_Script.PerformanceStats.StartStopwatch(Diagnostics.PerformanceCounter.Execution);
+
+				m_CanYield = false;
+
+				try
+				{
+					int entrypoint = PushClrToScriptStackFrame(CallStackItemFlags.CallEntryPoint, function, args);
+					return Processing_Loop(entrypoint, stopwatch1, milliseconds);
 				}
 				finally
 				{

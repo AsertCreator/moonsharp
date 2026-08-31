@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using MoonSharp.Interpreter.DataStructs;
 using MoonSharp.Interpreter.Debugging;
@@ -13,7 +14,7 @@ namespace MoonSharp.Interpreter.Execution.VM
 
 		internal long AutoYieldCounter = 0;
 
-		private DynValue Processing_Loop(int instructionPtr)
+		private DynValue Processing_Loop(int instructionPtr, Stopwatch ending, int endingMilliseconds)
 		{
 			// This is the main loop of the processor, has a weird control flow and needs to be as fast as possible.
 			// This sentence is just a convoluted way to say "don't complain about gotos".
@@ -28,6 +29,11 @@ namespace MoonSharp.Interpreter.Execution.VM
 				while (true)
 				{
 					Instruction i = m_RootChunk.Code[instructionPtr];
+
+					if (ending != null && ending.ElapsedMilliseconds > endingMilliseconds)
+					{
+						throw new TimeoutException("Exhausted execution time of " + endingMilliseconds + " ms");
+					}
 
 					if (m_Debug.DebuggerAttached != null)
 					{

@@ -485,6 +485,47 @@ namespace MoonSharp.Interpreter
 		}
 
 		/// <summary>
+		/// NetBlox specific. Calls the specified function and aborts the execution after some time
+		/// </summary>
+		/// <param name="function">The Lua/MoonSharp function to be called</param>
+		/// <param name="args">The arguments to pass to the function.</param>
+		/// <returns>
+		/// The return value(s) of the function call.
+		/// </returns>
+		/// <exception cref="System.ArgumentException">Thrown if function is not of DataType.Function</exception>
+		public DynValue CallWithTimeout(DynValue function, int milliseconds, params DynValue[] args)
+		{
+			this.CheckScriptOwnership(function);
+			this.CheckScriptOwnership(args);
+
+			if (function.Type != DataType.Function && function.Type != DataType.ClrFunction)
+			{
+				DynValue metafunction = m_MainProcessor.GetMetamethod(function, "__call");
+
+				if (metafunction != null)
+				{
+					DynValue[] metaargs = new DynValue[args.Length + 1];
+					metaargs[0] = function;
+					for (int i = 0; i < args.Length; i++)
+						metaargs[i + 1] = args[i];
+
+					function = metafunction;
+					args = metaargs;
+				}
+				else
+				{
+					throw new ArgumentException("function is not a function and has no __call metamethod.");
+				}
+			}
+			else if (function.Type == DataType.ClrFunction)
+			{
+				return function.Callback.ClrCallback(this.CreateDynamicExecutionContext(function.Callback), new CallbackArguments(args, false));
+			}
+
+			return m_MainProcessor.CallWithTimeout(function, args, milliseconds);
+		}
+
+		/// <summary>
 		/// Calls the specified function.
 		/// </summary>
 		/// <param name="function">The Lua/MoonSharp function to be called</param>
