@@ -42,9 +42,10 @@ namespace MoonSharp.Interpreter.Execution.VM
 
 					++executedInstructions;
 
+					m_SavedInstructionPtr = instructionPtr;
+					
 					if (canAutoYield && executedInstructions > AutoYieldCounter)
 					{
-						m_SavedInstructionPtr = instructionPtr;
 						return DynValue.NewForcedYieldReq();
 					}
 
