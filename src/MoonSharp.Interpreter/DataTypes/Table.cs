@@ -9,6 +9,11 @@ namespace MoonSharp.Interpreter
 	/// </summary>
 	public class Table : RefIdObject, IScriptPrivateResource
 	{
+		/// <summary>
+		/// NetBlox specific. Specifies is a table can written-to.
+		/// </summary>
+		public bool Frozen;
+
 		readonly LinkedList<TablePair> m_Values;
 		readonly LinkedListIndex<DynValue, TablePair> m_ValueMap;
 		readonly LinkedListIndex<string, TablePair> m_StringMap;
@@ -59,6 +64,9 @@ namespace MoonSharp.Interpreter
 		/// </summary>
 		public void Clear()
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			m_Values.Clear();
 			m_StringMap.Clear();
 			m_ArrayMap.Clear();
@@ -97,6 +105,8 @@ namespace MoonSharp.Interpreter
 			}
 			set
 			{
+				if (Frozen)
+					throw ScriptRuntimeException.TableFrozen();
 				Set(keys, DynValue.FromObject(OwnerScript, value));
 			}
 		}
@@ -118,6 +128,8 @@ namespace MoonSharp.Interpreter
 			}
 			set
 			{
+				if (Frozen)
+					throw ScriptRuntimeException.TableFrozen();
 				Set(key, DynValue.FromObject(OwnerScript, value));
 			}
 		}
@@ -153,6 +165,9 @@ namespace MoonSharp.Interpreter
 		/// <param name="value">The value.</param>
 		public void Append(DynValue value)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			this.CheckScriptOwnership(value);
 			PerformTableSet(m_ArrayMap, Length + 1, DynValue.NewNumber(Length + 1), value, true, Length + 1);
 		}
@@ -161,6 +176,9 @@ namespace MoonSharp.Interpreter
 
 		private void PerformTableSet<T>(LinkedListIndex<T, TablePair> listIndex, T key, DynValue keyDynValue, DynValue value, bool isNumber, int appendKey)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			TablePair prev = listIndex.Set(key, new TablePair(keyDynValue, value));
 
 			// If this is an insert, we can invalidate all iterators and collect dead keys
@@ -209,6 +227,8 @@ namespace MoonSharp.Interpreter
 		/// <param name="value">The value.</param>
 		public void Set(string key, DynValue value)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
 			if (key == null)
 				throw ScriptRuntimeException.TableIndexIsNil();
 
@@ -223,6 +243,9 @@ namespace MoonSharp.Interpreter
 		/// <param name="value">The value.</param>
 		public void Set(int key, DynValue value)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			this.CheckScriptOwnership(value);
 			PerformTableSet(m_ArrayMap, key, DynValue.NewNumber(key), value, true, -1);
 		}
@@ -234,6 +257,9 @@ namespace MoonSharp.Interpreter
 		/// <param name="value">The value.</param>
 		public void Set(DynValue key, DynValue value)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			if (key.IsNilOrNan())
 			{
 				if (key.IsNil())
@@ -272,6 +298,9 @@ namespace MoonSharp.Interpreter
 		/// <param name="value">The value.</param>
 		public void Set(object key, DynValue value)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			if (key == null)
 				throw ScriptRuntimeException.TableIndexIsNil();
 
@@ -291,6 +320,9 @@ namespace MoonSharp.Interpreter
 		/// <param name="value">The value.</param>
 		public void Set(object[] keys, DynValue value)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			if (keys == null || keys.Length <= 0)
 				throw ScriptRuntimeException.TableIndexIsNil();
 
@@ -446,6 +478,9 @@ namespace MoonSharp.Interpreter
 
 		private bool PerformTableRemove<T>(LinkedListIndex<T, TablePair> listIndex, T key, bool isNumber)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			var removed = listIndex.Remove(key);
 
 			if (removed && isNumber)
@@ -463,6 +498,9 @@ namespace MoonSharp.Interpreter
 		/// <returns><c>true</c> if values was successfully removed; otherwise, <c>false</c>.</returns>
 		public bool Remove(string key)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			return PerformTableRemove(m_StringMap, key, false);
 		}
 
@@ -473,6 +511,9 @@ namespace MoonSharp.Interpreter
 		/// <returns><c>true</c> if values was successfully removed; otherwise, <c>false</c>.</returns>
 		public bool Remove(int key)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			return PerformTableRemove(m_ArrayMap, key, true);
 		}
 
@@ -503,6 +544,9 @@ namespace MoonSharp.Interpreter
 		/// <returns><c>true</c> if values was successfully removed; otherwise, <c>false</c>.</returns>
 		public bool Remove(object key)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			if (key is string)
 				return Remove((string)key);
 
@@ -520,6 +564,9 @@ namespace MoonSharp.Interpreter
 		/// <returns><c>true</c> if values was successfully removed; otherwise, <c>false</c>.</returns>
 		public bool Remove(params object[] keys)
 		{
+			if (Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+				
 			if (keys == null || keys.Length <= 0)
 				return false;
 

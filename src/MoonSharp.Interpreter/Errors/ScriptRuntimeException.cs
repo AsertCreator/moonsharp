@@ -302,6 +302,18 @@ namespace MoonSharp.Interpreter
 		}
 
 		/// <summary>
+		/// NetBlox specific. Creates a ScriptRuntimeException with a predefined error message specifying that
+		/// a table is frozen and cannot be modified.
+		/// </summary>
+		/// <returns>
+		/// The exception to be raised.
+		/// </returns>
+		public static ScriptRuntimeException TableFrozen()
+		{
+			return new ScriptRuntimeException("table is read-only");
+		}
+
+		/// <summary>
 		/// Creates a ScriptRuntimeException with a predefined error message specifying that
 		/// a table indexing operation used nil as the key.
 		/// </summary>
