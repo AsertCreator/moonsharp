@@ -41,6 +41,8 @@ namespace MoonSharp.Interpreter
 			if (modules.Has(CoreModules.Debug)) RegisterModuleType<DebugModule>(table);
 			if (modules.Has(CoreModules.Json)) RegisterModuleType<JsonModule>(table);
 
+			table.Frozen = true;
+
 			return table;
 		}
 
@@ -219,7 +221,11 @@ namespace MoonSharp.Interpreter
 		/// <exception cref="System.ArgumentException">If the module contains some incompatibility</exception>
 		public static Table RegisterModuleType<T>(this Table table)
 		{
-			return RegisterModuleType(table, typeof(T));
+			table.Frozen = false;
+			Table result = RegisterModuleType(table, typeof(T));
+			table.Frozen = true;
+			result.Frozen = true;
+			return result;
 		}
 
 

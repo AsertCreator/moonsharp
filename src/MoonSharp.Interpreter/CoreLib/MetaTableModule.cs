@@ -24,6 +24,9 @@ namespace MoonSharp.Interpreter.CoreLib
 
 			DynValue curmeta = executionContext.GetMetamethod(table, "__metatable");
 
+			if (table.Table.Frozen)
+				throw ScriptRuntimeException.TableFrozen();
+
 			if (curmeta != null)
 			{
 				throw new ScriptRuntimeException("cannot change a protected metatable");
